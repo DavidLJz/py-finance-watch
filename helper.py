@@ -48,6 +48,34 @@ def obtener_proyeccion_rendimientos(bancos=None, depositos=None, periodo=365):
     conn.close()
     return resultado or 0
 
+def obtener_instituciones() -> list[dict]:
+    conn = sqlite3.connect('bancos.db')
+    cursor = conn.cursor()
+
+    sql = '''
+        SELECT 
+            Institucion.sNombre AS 'Institucion.sNombre',
+            Institucion.bSofipo AS 'Institucion.bSofipo',
+            Institucion.sDescripcion AS 'Institucion.sDescripcion',
+            Deposito.sNombre AS 'Deposito.sNombre',
+            Deposito.nMonto AS 'Deposito.nMonto',
+            Deposito.nTasaInteresAnual AS 'Deposito.nTasaInteresAnual'
+        FROM Institucion
+        LEFT JOIN Deposito ON Institucion.sNombre = Deposito.nIdInstitucion
+    '''.strip()
+
+    cursor.execute(sql)
+
+    resultado = cursor.fetchall()
+
+    headers = [description[0] for description in cursor.description]
+
+    conn.close()
+
+    data = [dict(zip(headers, row)) for row in resultado]
+
+    return data
+
 def main():
     parser = argparse.ArgumentParser(description="Herramientas de consulta para la base de datos de bancos.")
     subparsers = parser.add_subparsers(dest="comando")
@@ -61,6 +89,9 @@ def main():
     proyeccion_parser.add_argument("-b", "--bancos", nargs="+", help="Lista de bancos a considerar")
     proyeccion_parser.add_argument("-d", "--depositos", nargs="+", help="Lista de depósitos a considerar")
 
+    tabulate_parser = subparsers.add_parser("tabulate", help="Imprimir la información en formato tabular")
+    tabulate_parser.add_argument('--fmt', default='simple', help="Formato de la tabla", type=str, choices=['plain', 'simple', 'grid', 'pipe', 'orgtbl', 'jira', 'presto', 'pretty', 'psql', 'rst', 'mediawiki', 'moinmoin', 'youtrack', 'html', 'unsafehtml', 'latex', 'latex_raw', 'latex_booktabs', 'tsv'])
+
     args = parser.parse_args()
 
     # 2000 -> $2,000.00
@@ -73,6 +104,18 @@ def main():
     elif args.comando == "proyeccion":
         resultado = obtener_proyeccion_rendimientos(args.bancos, args.depositos, args.periodo)
         print(f"La proyección de rendimientos en {args.periodo} días es: {formatter(resultado)}")
+
+    elif args.comando == "tabulate" or args.comando == "json":
+
+        resultado = obtener_instituciones()
+        
+        if args.comando == "json":
+            from json import dumps
+            print(dumps(resultado, indent=2))
+        else:
+            from tabulate import tabulate as tabulate_fn
+            print(tabulate_fn(resultado, headers="keys", tablefmt= args.fmt))
+
     else:
         parser.print_help()
 

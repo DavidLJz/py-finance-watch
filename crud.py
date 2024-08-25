@@ -40,10 +40,10 @@ def eliminar_institucion(nombre):
     print(f"Institución '{nombre}' eliminada con éxito.")
 
 # ... (Funciones CRUD similares para la tabla Deposito)
-def crear_deposito(nombre:str, desc:str ='', monto:float =0, tasa_interes_anual:float =0):
+def crear_deposito(nombre:str, institucion:str, desc:str ='', monto:float =0, tasa_interes_anual:float =0):
     conn = conectar_db()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO Deposito (sNombre, nIdInstitucion, sDescripcion, nMonto, nTasaInteresAnual) VALUES (?, ?, ?, ?, ?)", (nombre, desc, monto, tasa_interes_anual))
+    cursor.execute("INSERT INTO Deposito (sNombre, nIdInstitucion, sDescripcion, nMonto, nTasaInteresAnual) VALUES (?, ?, ?, ?, ?)", (nombre, institucion, desc, monto, tasa_interes_anual))
     conn.commit()
     conn.close()
     print(f"Deposito '{nombre}' creado con éxito.")
@@ -90,6 +90,7 @@ def main():
     # Subparser para Deposito (similar al de Institucion)
     dep_parser = subparsers.add_parser("deposito", help="Operaciones CRUD para depósitos")
     dep_parser.add_argument("operacion", choices=["crear", "leer", "actualizar", "eliminar"], help="Operación a realizar")
+    dep_parser.add_argument("institucion", help="Nombre de la institución a la que pertenece el depósito", type=str)
     dep_parser.add_argument("nombre", help="Nombre del depósito")
     dep_parser.add_argument("-d", "--descripcion", help="Descripción del depósito")
     dep_parser.add_argument("-m", "--monto", type=float, help="Monto del depósito")
@@ -111,7 +112,7 @@ def main():
 
     elif args.tabla == "deposito":
         if args.operacion == "crear":
-            crear_deposito(args.nombre, args.descripcion, args.monto, args.tasa_interes)
+            crear_deposito(args.nombre, args.institucion, args.descripcion, args.monto, args.tasa_interes)
         elif args.operacion == "leer":
             leer_deposito(args.nombre)
         elif args.operacion == "actualizar":
